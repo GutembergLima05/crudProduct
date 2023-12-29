@@ -1,18 +1,47 @@
 using crudProduct;
+using crudProduct.Data;
+using crudProduct.Models;
+using crudProduct.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
-using System.ComponentModel.DataAnnotations;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+builder.Services
+    .AddAuthentication(x =>
+    {
+        x.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+        x.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    })
+    .AddJwtBearer(x =>
+    {
+        x.RequireHttpsMetadata = false;
+        x.SaveToken = true;
+        x.TokenValidationParameters = new TokenValidationParameters
+        {
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(Configuration.PrivateKey)),
+            ValidateIssuer = false,
+            ValidateAudience = false
+        };
+    });
+
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("Admin", policy => policy.RequireRole("manager"));
+    options.AddPolicy("Employee", policy => policy.RequireRole("employee"));
+});
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<DataContext>();
+builder.Services.AddTransient<TokenService>();
 
 var app = builder.Build();
+app.UseAuthentication();
+app.UseAuthorization();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -21,13 +50,15 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.MapPost("/login", (User user, TokenService tokenService)
+    => tokenService.Generate(user));
 
 app.MapGet("/product", async (DataContext context) =>
- await context.Products.OrderBy(p => p.Id).ToListAsync());
+ await context.Products.OrderBy(p => p.Id).ToListAsync()).RequireAuthorization();
 
 app.MapGet("/product/{id}", async (DataContext context, int id) =>
 await context.Products.FindAsync(id) is Product product ?
-Results.Ok(product) : Results.NotFound("Product not found."));
+Results.Ok(product) : Results.NotFound("Product not found.")).RequireAuthorization();
 
 app.MapPost("/product", async(DataContext context, Product product) =>
 {
@@ -37,7 +68,7 @@ app.MapPost("/product", async(DataContext context, Product product) =>
     context.Products.Add(product);
     await context.SaveChangesAsync();
     return Results.Ok(product);
-});
+}).RequireAuthorization();
 
 app.MapPut("/product/{id}", async(DataContext context, Product updateProduct, int id) =>
 {
@@ -54,7 +85,7 @@ app.MapPut("/product/{id}", async(DataContext context, Product updateProduct, in
     await context.SaveChangesAsync();
 
     return Results.Ok(product);
-});
+}).RequireAuthorization();
 
 app.MapDelete("/product/{id}", async (DataContext context, int id) =>
 {
@@ -66,17 +97,6 @@ app.MapDelete("/product/{id}", async (DataContext context, int id) =>
     await context.SaveChangesAsync();
 
     return Results.Ok(product);
-});
-
+}).RequireAuthorization();
 
 app.Run();
-
-public class Product
-{
-    [Key]
-    public int Id { get; set; }
-    [Required(ErrorMessage = "The name field is required")]
-    public string Name { get; set; }
-    public decimal Price { get; set; }
-    public string? Description { get; set; }
-}

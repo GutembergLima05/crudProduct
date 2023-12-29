@@ -1,6 +1,7 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using crudProduct.Models;
+using Microsoft.EntityFrameworkCore;
 
-namespace crudProduct
+namespace crudProduct.Data
 {
     public class DataContext : DbContext
     {
