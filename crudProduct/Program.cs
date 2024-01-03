@@ -50,8 +50,38 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-app.MapPost("/login", (User user, TokenService tokenService)
-    => tokenService.Generate(user));
+app.MapPost("/user", async (DataContext context, User user) =>
+{
+    if (user is null)
+        return Results.BadRequest("Fill in all fields");
+
+    if (string.IsNullOrWhiteSpace(user.Email))
+        return Results.BadRequest("The Email field is required.");
+
+    var userEmail = await context.Users.FirstOrDefaultAsync(u => u.Email == user.Email);
+    if (userEmail != null)
+        return Results.BadRequest("Email already exists");
+
+    context.Add(user);
+    await context.SaveChangesAsync();
+    return Results.Ok(user);
+});
+
+app.MapPost("/login", async (User user, TokenService tokenService, DataContext context) =>
+{
+    if (user is null)
+        return Results.BadRequest("Fill in all fields");
+
+    var userLogged = await context.Users.FirstOrDefaultAsync(u => u.Email == user.Email);
+
+    if (userLogged is null)
+        return Results.BadRequest("User not found");
+
+    if (user.Password != userLogged.Password)
+        return Results.BadRequest("User password wrong");
+
+    return Results.Ok(tokenService.Generate(userLogged));
+});
 
 app.MapGet("/product", async (DataContext context) =>
  await context.Products.OrderBy(p => p.Id).ToListAsync()).RequireAuthorization();

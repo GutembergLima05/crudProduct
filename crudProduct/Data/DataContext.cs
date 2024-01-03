@@ -10,8 +10,9 @@ namespace crudProduct.Data
         }
 
         public DbSet<Product> Products { get; set; }
+        public DbSet<User> Users { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder) =>
-            optionsBuilder.UseNpgsql("Server=tuffi.db.elephantsql.com;Port=5432;Database=htfoikvs;User Id=htfoikvs;Password=bdV1JHvvVMtx8p5S9C82mUiPH4W_Dbv5;");
+            optionsBuilder.UseNpgsql("Server=babar.db.elephantsql.com;Port=5432;Database=ydrmlyru;User Id=ydrmlyru;Password=HCjf_vwV1YOzO_2GGQQ8qFjkHhwvCeF-;");
     }
 }
