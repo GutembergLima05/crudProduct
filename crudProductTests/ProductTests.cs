@@ -1,6 +1,6 @@
 namespace crudProductTests;
 
-public class UnitTest1
+public class ProductTests
 {
     [Fact]
     public void Test1()
