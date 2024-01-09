@@ -1,5 +1,6 @@
 using crudProduct;
 using crudProduct.Data;
+using crudProduct.Interfaces;
 using crudProduct.Models;
 using crudProduct.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -37,6 +38,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<DataContext>();
 builder.Services.AddTransient<TokenService>();
+builder.Services.AddTransient<IUserService, UserService>();
 
 var app = builder.Build();
 app.UseAuthentication();
@@ -50,37 +52,14 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-app.MapPost("/user", async (DataContext context, User user) =>
+app.MapPost("/user", async (IUserService userService, User user) =>
 {
-    if (user is null)
-        return Results.BadRequest("Fill in all fields");
-
-    if (string.IsNullOrWhiteSpace(user.Email))
-        return Results.BadRequest("The Email field is required.");
-
-    var userEmail = await context.Users.FirstOrDefaultAsync(u => u.Email == user.Email);
-    if (userEmail != null)
-        return Results.BadRequest("Email already exists");
-
-    context.Add(user);
-    await context.SaveChangesAsync();
-    return Results.Ok(user);
+    return await userService.CreateUserAsync(user);
 });
 
-app.MapPost("/login", async (User user, TokenService tokenService, DataContext context) =>
+app.MapPost("/login", async (IUserService userService, User user) =>
 {
-    if (user is null)
-        return Results.BadRequest("Fill in all fields");
-
-    var userLogged = await context.Users.FirstOrDefaultAsync(u => u.Email == user.Email);
-
-    if (userLogged is null)
-        return Results.BadRequest("User not found");
-
-    if (user.Password != userLogged.Password)
-        return Results.BadRequest("User password wrong");
-
-    return Results.Ok(tokenService.Generate(userLogged));
+    return await userService.LoginUserAsync(user, app.Services.GetRequiredService<TokenService>());
 });
 
 app.MapGet("/product", async (DataContext context) =>
