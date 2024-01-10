@@ -53,14 +53,10 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.MapPost("/user", async (IUserService userService, User user) =>
-{
-    return await userService.CreateUserAsync(user);
-});
+ await userService.CreateUserAsync(user));
 
 app.MapPost("/login", async (IUserService userService, User user) =>
-{
-    return await userService.LoginUserAsync(user, app.Services.GetRequiredService<TokenService>());
-});
+ await userService.LoginUserAsync(user, app.Services.GetRequiredService<TokenService>()));
 
 app.MapGet("/product", async (DataContext context) =>
  await context.Products.OrderBy(p => p.Id).ToListAsync()).RequireAuthorization();
