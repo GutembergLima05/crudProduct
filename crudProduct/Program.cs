@@ -4,7 +4,6 @@ using crudProduct.Interfaces;
 using crudProduct.Models;
 using crudProduct.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 
@@ -58,50 +57,19 @@ app.MapPost("/user", async (IUserService userService, User user) =>
 app.MapPost("/login", async (IUserService userService, User user) =>
  await userService.LoginUserAsync(user, app.Services.GetRequiredService<TokenService>()));
 
-app.MapGet("/product", async (DataContext context) =>
- await context.Products.OrderBy(p => p.Id).ToListAsync()).RequireAuthorization();
+app.MapGet("/product", async (IProductService productService) =>
+ await productService.GetAllProductsAsync()).RequireAuthorization();
 
-app.MapGet("/product/{id}", async (DataContext context, int id) =>
-await context.Products.FindAsync(id) is Product product ?
-Results.Ok(product) : Results.NotFound("Product not found.")).RequireAuthorization();
+app.MapGet("/product/{id}", async (IProductService productService, int id) =>
+await productService.GetProductByIdAsync(id)).RequireAuthorization();
 
-app.MapPost("/product", async(DataContext context, Product product) =>
-{
-    if (string.IsNullOrWhiteSpace(product.Name))
-        return Results.BadRequest("The Name field is required.");
+app.MapPost("/product", async(IProductService productService, Product product) =>
+await productService.CreateProductAsync(product)).RequireAuthorization();
 
-    context.Products.Add(product);
-    await context.SaveChangesAsync();
-    return Results.Ok(product);
-}).RequireAuthorization();
+app.MapPut("/product/{id}", async(IProductService productService, Product updateProduct, int idProduct) =>
+await productService.UpdateProductByIdAsync(updateProduct, idProduct)).RequireAuthorization();
 
-app.MapPut("/product/{id}", async(DataContext context, Product updateProduct, int id) =>
-{
-    var product = await context.Products.FindAsync(id);
-    if (product is null)
-        return Results.NotFound("Product not found.");
-
-    if (string.IsNullOrWhiteSpace(updateProduct.Name))
-        return Results.BadRequest("The Name field is required.");
-
-    product.Name = updateProduct.Name;
-    product.Description = updateProduct.Description;
-    product.Price = updateProduct.Price;
-    await context.SaveChangesAsync();
-
-    return Results.Ok(product);
-}).RequireAuthorization();
-
-app.MapDelete("/product/{id}", async (DataContext context, int id) =>
-{
-    var product = await context.Products.FindAsync(id);
-    if (product is null)
-        return Results.NotFound("Product not found.");
-
-    context.Products.Remove(product);
-    await context.SaveChangesAsync();
-
-    return Results.Ok(product);
-}).RequireAuthorization();
+app.MapDelete("/product/{id}", async (IProductService productService, int id) =>
+await productService.DeleteProductByIdAsync(id)).RequireAuthorization();
 
 app.Run();
