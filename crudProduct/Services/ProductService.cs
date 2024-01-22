@@ -33,7 +33,21 @@ namespace crudProduct.Services
 
         public async Task<IResult> DeleteProductByIdAsync(int id)
         {
-            
+            try
+            {
+                var product = await _context.Products.FindAsync(id);
+                if (product is null)
+                    return Results.NotFound("Product not found.");
+
+                _context.Products.Remove(product);
+                await _context.SaveChangesAsync();
+                return Results.Ok(product);
+
+            }
+            catch (Exception ex)
+            {
+                return Results.Problem("Internal error server: " + ex.Message);
+            }
         }
 
         public async Task<IResult> GetAllProductsAsync()
