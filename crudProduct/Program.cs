@@ -38,6 +38,7 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<DataContext>();
 builder.Services.AddTransient<TokenService>();
 builder.Services.AddTransient<IUserService, UserService>();
+builder.Services.AddTransient<IProductService, ProductService>();
 
 var app = builder.Build();
 app.UseAuthentication();
