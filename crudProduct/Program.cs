@@ -34,11 +34,17 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("Employee", policy => policy.RequireRole("employee"));
 });
 
+builder.Services.AddSingleton<IConfiguration>(builder.Configuration);
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<DataContext>();
 builder.Services.AddTransient<TokenService>();
 builder.Services.AddTransient<IUserService, UserService>();
+
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.ListenAnyIP(80);
+});
 
 var app = builder.Build();
 app.UseAuthentication();
